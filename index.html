@@ -1,668 +1,1008 @@
+
 <!DOCTYPE html>
 <html lang="fr" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenStore - Plateforme Libre APK</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81'
-                        }
-                    }
-                }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#020617">
+  <title>OpenStore - Plateforme Libre APK</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: "#eef2ff", 100: "#e0e7ff",
+              500: "#6366f1", 600: "#4f46e5",
+              700: "#4338ca", 900: "#312e81"
             }
+          }
         }
-    </script>
-    <style>
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.6);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(99, 102, 241, 0.4);
-            border-radius: 4px;
-        }
-    </style>
+      }
+    };
+  </script>
+
+  <style>
+    .glass-panel {
+      background: rgba(15,23,42,.92);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,.1);
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #4f46e5;
+      border-radius: 5px;
+    }
+    [hidden] { display: none !important; }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-brand-500 selection:text-white transition-colors duration-200">
 
-    <!-- TOAST NOTIFICATION CONTAINER -->
-    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
 
-    <!-- TOP HEADER -->
-    <header class="sticky top-0 z-40 w-full glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3">
-        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <!-- LOGO VECTORISÉ DE L'IMAGE ORIGINAL (Sac bleu avec orbite cyan) -->
-                <div class="relative w-10 h-10 shrink-0">
-                    <svg viewBox="0 0 512 512" class="w-full h-full drop-shadow-[0_0_10px_rgba(0,229,255,0.4)]" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <linearGradient id="bagGrad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-                                <stop offset="0%" stop-color="#2575fc"/>
-                                <stop offset="100%" stop-color="#004be5"/>
-                            </linearGradient>
-                            <linearGradient id="orbitGrad" x1="0" y1="0" x2="512" y2="0" gradientUnits="userSpaceOnUse">
-                                <stop offset="0%" stop-color="#00e5ff"/>
-                                <stop offset="100%" stop-color="#00b0ff"/>
-                            </linearGradient>
-                        </defs>
-                        <path d="M180 150 C180 80, 332 80, 332 150 L332 170 L180 170 Z" stroke="#ffffff" stroke-width="32" stroke-linecap="round" fill="none"/>
-                        <path d="M100 170 L412 170 C430 170, 442 185, 438 202 L395 440 C392 458, 376 470, 358 470 L154 470 C136 470, 120 458, 117 440 L74 202 C70 185, 82 170, 100 170 Z" fill="url(#bagGrad)"/>
-                        <path d="M360 170 L412 170 C430 170, 442 185, 438 202 L395 440 C392 458, 376 470, 358 470 L345 470 Z" fill="#002bb8" opacity="0.4"/>
-                        <ellipse cx="256" cy="325" rx="72" ry="72" stroke="#ffffff" stroke-width="36" fill="none"/>
-                        <path d="M125 350 C130 300, 382 250, 387 300 C390 330, 220 380, 125 350 Z" fill="url(#orbitGrad)" transform="rotate(-18 256 325)"/>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">OpenStore</h1>
-                    <p class="text-xs text-slate-400 mt-0.5">Serveur Firebase Connecté</p>
-                </div>
-            </div>
+  <div id="toastContainer"
+       class="fixed bottom-5 right-5 z-[100] flex flex-col gap-2"></div>
 
-            <!-- ACTIONS / MON COMPTE -->
-            <div class="flex items-center gap-3">
-                <div id="connectionBadge" class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Serveur en Ligne
-                </div>
-
-                <!-- BOUTON D'ACCÈS À INDEX2 POUR L'ADMINISTRATEUR -->
-                <a id="goToIndex2Btn" href="index2.html" class="hidden flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-900/80 hover:bg-indigo-800 text-indigo-300 border border-indigo-500/40 text-xs font-medium transition">
-                    <i data-lucide="external-link" class="w-4 h-4"></i>
-                    <span class="hidden md:inline">Accéder à Index2</span>
-                </a>
-
-                <button id="openAdminPanelBtn" class="hidden flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs font-medium transition">
-                    <i data-lucide="shield" class="w-4 h-4"></i>
-                    <span class="hidden md:inline">Espace Admin</span>
-                </button>
-
-                <button id="openSubmitModalBtn" class="hidden flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm transition shadow-lg shadow-brand-600/25 active:scale-95">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                    <span>Ajouter une App</span>
-                </button>
-
-                <div id="userAccountSection">
-                    <button id="openLoginModalBtn" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-medium text-sm transition active:scale-95">
-                        <i data-lucide="log-in" class="w-4 h-4 text-brand-400"></i>
-                        <span>Connexion</span>
-                    </button>
-                </div>
-            </div>
+  <header class="sticky top-0 z-40 glass-panel px-4 lg:px-8 py-3">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+      <a href="./index.html" class="flex items-center gap-3 shrink-0">
+        <div class="w-10 h-10">
+          <svg viewBox="0 0 512 512" class="w-full h-full"
+               xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="bagGrad" x1="0" y1="0" x2="512" y2="512">
+                <stop stop-color="#2575fc"/>
+                <stop offset="1" stop-color="#004be5"/>
+              </linearGradient>
+              <linearGradient id="orbitGrad" x1="0" y1="0" x2="512" y2="0">
+                <stop stop-color="#00e5ff"/>
+                <stop offset="1" stop-color="#00b0ff"/>
+              </linearGradient>
+            </defs>
+            <path d="M180 150 C180 80 332 80 332 150 L332 170 L180 170Z"
+                  stroke="white" stroke-width="32" stroke-linecap="round"
+                  fill="none"/>
+            <path d="M100 170 L412 170 Q442 170 438 202 L395 440
+                     Q392 470 358 470 L154 470 Q120 470 117 440 L74 202
+                     Q70 170 100 170Z" fill="url(#bagGrad)"/>
+            <ellipse cx="256" cy="325" rx="72" ry="72"
+                     stroke="white" stroke-width="36" fill="none"/>
+            <path d="M125 350 C130 300 382 250 387 300
+                     C390 330 220 380 125 350Z"
+                  fill="url(#orbitGrad)" transform="rotate(-18 256 325)"/>
+          </svg>
         </div>
-    </header>
-
-    <!-- MAIN CONTENT AREA -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8 space-y-8">
-
-        <div id="guestBanner" class="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
-            <div class="flex items-center gap-3">
-                <div class="p-2.5 rounded-xl bg-brand-600/10 text-brand-400 border border-brand-500/20 shrink-0">
-                    <i data-lucide="download-cloud" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <h2 class="text-sm font-semibold text-slate-200">Accès Public Direct</h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Téléchargez les applications freely. Connectez-vous avec votre adresse e-mail pour ajouter ou gérer vos APK.</p>
-                </div>
-            </div>
+        <div>
+          <h1 class="font-bold text-lg leading-none">OpenStore</h1>
+          <p id="connectionStatus" class="text-xs text-slate-400 mt-1">
+            Connexion au serveur...
+          </p>
         </div>
+      </a>
 
-        <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div class="relative w-full md:w-96">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="searchInput" placeholder="Rechercher une application..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition">
-            </div>
+      <div class="flex items-center justify-end gap-2 flex-wrap">
+        <a id="goToIndex2Btn" href="index2.html"
+           hidden
+           class="px-3 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-600 text-xs">
+          Index2
+        </a>
 
-            <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 custom-scrollbar">
-                <button data-category="all" class="category-btn active px-3.5 py-1.5 rounded-lg text-xs font-medium bg-brand-600 text-white transition">Toutes</button>
-                <button data-category="Utilitaires" class="category-btn px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 transition">Utilitaires</button>
-                <button data-category="Jeux" class="category-btn px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 transition">Jeux</button>
-                <button data-category="Productivité" class="category-btn px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 transition">Productivité</button>
-            </div>
+        <button id="openAdminPanelBtn" hidden
+          class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs">
+          <i data-lucide="shield" class="w-4 h-4 inline"></i>
+          Administration
+        </button>
+
+        <button id="openSubmitModalBtn" hidden
+          class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm">
+          <i data-lucide="plus" class="w-4 h-4 inline"></i>
+          Ajouter une App
+        </button>
+
+        <div id="userAccountSection">
+          <button id="openLoginModalBtn"
+            class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm">
+            <i data-lucide="log-in" class="w-4 h-4 inline"></i>
+            Connexion
+          </button>
         </div>
-
-        <div id="appGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-
-        <div id="emptyState" class="hidden flex flex-col items-center justify-center py-16 text-center space-y-4">
-            <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500">
-                <i data-lucide="package-open" class="w-8 h-8"></i>
-            </div>
-            <div class="max-w-md">
-                <h3 class="text-base font-semibold text-slate-200">Aucune application trouvée</h3>
-                <p class="text-xs text-slate-400 mt-1">Le magasin est vide ou aucune application ne correspond à votre recherche.</p>
-            </div>
-        </div>
-    </main>
-
-    <!-- MODAL : CONNEXION PAR ADRESSE E-MAIL -->
-    <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
-            <button id="closeLoginModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-            
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 rounded-xl bg-brand-600/20 text-brand-400 flex items-center justify-center border border-brand-500/30">
-                    <i data-lucide="lock" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <h2 class="text-lg font-bold text-slate-100">Espace Membre</h2>
-                    <p class="text-xs text-slate-400">Connectez-vous avec votre adresse e-mail</p>
-                </div>
-            </div>
-
-            <form id="loginForm" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Adresse E-mail / Identifiant</label>
-                    <input type="text" id="loginUsername" required placeholder="exemple@mail.com" class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Mot de Passe</label>
-                    <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
-                </div>
-                <div id="loginErrorMsg" class="hidden text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-lg flex items-center gap-2">
-                    <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
-                    <span id="loginErrorText">Adresse e-mail ou mot de passe incorrect.</span>
-                </div>
-                <button type="submit" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm transition shadow-lg shadow-brand-600/25 active:scale-95 flex items-center justify-center gap-2">
-                    <i data-lucide="log-in" class="w-4 h-4"></i>
-                    <span>Se Connecter</span>
-                </button>
-            </form>
-        </div>
+      </div>
     </div>
+  </header>
 
-    <!-- MODAL : SOUMETTRE UNE APP -->
-    <div id="submitModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <button id="closeSubmitModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-            <h2 class="text-lg font-bold text-slate-100 mb-1">Ajouter une Application</h2>
-            <p class="text-xs text-slate-400 mb-6">Elle sera enregistrée sur votre serveur Firebase et immédiatement synchronisée sur tous les appareils.</p>
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8 space-y-8">
 
-            <form id="addAppForm" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Nom de l'application *</label>
-                    <input type="text" id="appName" required placeholder="Ex: Mon Application APK" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Catégorie *</label>
-                    <select id="appCategory" required class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
-                        <option value="Utilitaires">Utilitaires</option>
-                        <option value="Jeux">Jeux</option>
-                        <option value="Productivité">Productivité</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Lien de téléchargement direct (.apk) *</label>
-                    <input type="url" id="appDownloadUrl" required placeholder="https://.../mon-application.apk" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Lien du Code Source (GitHub / GitLab)</label>
-                    <input type="url" id="appRepoUrl" placeholder="https://github.com/..." class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">URL de l'Icône (Optionnel)</label>
-                    <input type="url" id="appIconUrl" placeholder="https://.../icon.png" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Description</label>
-                    <textarea id="appDescription" rows="3" placeholder="Présentez brièvement votre application..." class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-brand-500"></textarea>
-                </div>
+    <section class="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 border border-slate-800">
+      <h2 class="font-semibold">Bienvenue sur OpenStore</h2>
+      <p class="text-sm text-slate-400 mt-1">
+        Télécharge des applications Android et consulte leur code source.
+        Connecte-toi pour proposer une application.
+      </p>
+    </section>
 
-                <div class="pt-2 flex justify-end gap-3">
-                    <button type="button" id="cancelSubmitModalBtn" class="px-4 py-2 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Annuler</button>
-                    <button type="submit" class="px-4 py-2 rounded-lg text-xs font-medium bg-brand-600 text-white hover:bg-brand-500 transition shadow-lg shadow-brand-600/20">Publier sur le Store</button>
-                </div>
-            </form>
+    <section class="flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div class="relative w-full md:w-96">
+        <i data-lucide="search"
+           class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input id="searchInput" type="search"
+          placeholder="Rechercher une application..."
+          class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button data-category="all" class="category-btn px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm">Toutes</button>
+        <button data-category="Utilitaires" class="category-btn px-3 py-2 rounded-lg bg-slate-800 text-sm">Utilitaires</button>
+        <button data-category="Jeux" class="category-btn px-3 py-2 rounded-lg bg-slate-800 text-sm">Jeux</button>
+        <button data-category="Productivité" class="category-btn px-3 py-2 rounded-lg bg-slate-800 text-sm">Productivité</button>
+      </div>
+    </section>
+
+    <p id="loadingMessage" class="text-sm text-slate-400">Chargement des applications...</p>
+
+    <section id="appGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></section>
+
+    <section id="emptyState" hidden class="py-16 text-center">
+      <i data-lucide="package-open" class="w-12 h-12 mx-auto text-slate-500"></i>
+      <h2 class="font-semibold mt-4">Aucune application trouvée</h2>
+      <p class="text-sm text-slate-400 mt-2">
+        Essaie un autre mot-clé ou une autre catégorie.
+      </p>
+    </section>
+
+    <section id="loadError" hidden
+      class="p-4 rounded-xl border border-rose-500/30 bg-rose-950/30">
+      <p id="loadErrorText" class="text-sm text-rose-300"></p>
+      <button id="retryLoadBtn"
+        class="mt-3 px-4 py-2 rounded-lg bg-rose-700 hover:bg-rose-600 text-sm">
+        Réessayer
+      </button>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-800 p-5 text-center text-xs text-slate-500">
+    OpenStore — Plateforme libre d'applications Android
+  </footer>
+
+  <!-- CONNEXION -->
+  <div id="loginModal" hidden
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6">
+      <div class="flex justify-between items-center mb-5">
+        <h2 class="text-xl font-bold">Espace membre</h2>
+        <button data-close="loginModal" class="p-2 hover:text-rose-400" aria-label="Fermer">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label for="loginUsername" class="block text-sm mb-2">E-mail ou identifiant</label>
+          <input id="loginUsername" required autocomplete="username"
+            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
         </div>
-    </div>
-
-    <!-- MODAL : ADMIN PANEL -->
-    <div id="adminPanelModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col">
-            <button id="closeAdminPanelModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-            
-            <div class="flex items-center justify-between gap-3 mb-6 pr-8">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-                        <i data-lucide="shield" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-100">Panneau d'Administration</h2>
-                        <p class="text-xs text-slate-400">Gestion des utilisateurs et des comptes contributeurs</p>
-                    </div>
-                </div>
-                
-                <!-- LIEN VERS INDEX2 DANS LA MODAL ADMIN -->
-                <a href="index2.html" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition shadow-md shadow-indigo-600/20">
-                    <i data-lucide="arrow-right-circle" class="w-4 h-4"></i>
-                    <span>Ouvrir Index2</span>
-                </a>
-            </div>
-
-            <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-6 space-y-3">
-                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <i data-lucide="user-plus" class="w-4 h-4 text-brand-400"></i>
-                    Créer un identifiant temporaire (Ami / E-mail)
-                </h3>
-                <form id="createUserForm" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                    <div>
-                        <label class="block text-[11px] text-slate-400 mb-1">E-mail / Identifiant</label>
-                        <input type="text" id="newUsername" required placeholder="monadresse@email.com" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] text-slate-400 mb-1">Mot de Passe Temporaire</label>
-                        <input type="text" id="newUserTempPassword" required placeholder="ex: Pass1234" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-100 focus:outline-none focus:border-brand-500">
-                    </div>
-                    <div>
-                        <button type="submit" class="w-full py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium transition shadow-md shadow-brand-600/20 flex items-center justify-center gap-1.5">
-                            <i data-lucide="plus" class="w-4 h-4"></i>
-                            Créer Compte
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Comptes Enregistrés</h3>
-                <div id="usersListContainer" class="space-y-2"></div>
-            </div>
+        <div>
+          <label for="loginPassword" class="block text-sm mb-2">Mot de passe</label>
+          <input id="loginPassword" type="password" required
+            autocomplete="current-password"
+            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
         </div>
-    </div>
+        <p id="loginErrorText" hidden class="text-sm text-rose-400"></p>
+        <button id="loginSubmitBtn" type="submit"
+          class="w-full p-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-medium">
+          Se connecter
+        </button>
+      </form>
+    </section>
+  </div>
 
-    <!-- SCRIPT FIREBASE COMPORTANT AUTH ET DATABASE -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, onValue, push, remove, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  <!-- AJOUT D'APPLICATION -->
+  <div id="submitModal" hidden
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85">
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-5">
+        <h2 class="text-xl font-bold">Ajouter une application</h2>
+        <button data-close="submitModal" aria-label="Fermer">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
 
-        // CONFIGURATION FIREBASE
-        const firebaseConfig = {
-            apiKey: "AIzaSyDBd_NPKinJ6Vu4Wk_98rNaM75NBNMaGdo",
-            authDomain: "openstore-be393.firebaseapp.com",
-            databaseURL: "https://openstore-be393-default-rtdb.firebaseio.com",
-            projectId: "openstore-be393",
-            storageBucket: "openstore-be393.firebasestorage.app",
-            messagingSenderId: "615451083226",
-            appId: "1:615451083226:web:2ccfdad00c8474088180e3",
-            measurementId: "G-1CRYGEK1G0"
-        };
+      <form id="addAppForm" class="space-y-4">
+        <div>
+          <label for="appName" class="block text-sm mb-1">Nom *</label>
+          <input id="appName" required maxlength="100"
+            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
+        </div>
+        <div>
+          <label for="appCategory" class="block text-sm mb-1">Catégorie *</label>
+          <select id="appCategory" required
+            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
+            <option>Utilitaires</option>
+            <option>Jeux</option>
+            <option>Productivité</option>
+          </select>
+        </div>
+        <div>
+          <label for="appDownloadUrl" class="block text-sm mb-1">Lien APK *</label>
+          <input id="appDownloadUrl" type="url" required placeholder="https://..."
+            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
+        </div>
+        <div>
+          <label for="appRepoUrl" class="block text-sm mb-1">Code source</label>
+          <input id="appRepoUrl" type="url" placeholder="https://github.com/..."
+            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
+        </div>
+        <div>
+          <label for="appIconUrl" class="block text-sm mb-1">URL de l'icône</label>
+          <input id="appIconUrl" type="url" placeholder="https://..."
+            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
+        </div>
+        <div>
+          <label for="appDescription" class="block text-sm mb-1">Description</label>
+          <textarea id="appDescription" rows="3" maxlength="2000"
+            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700"></textarea>
+        </div>
+        <p id="addAppError" hidden class="text-sm text-rose-400"></p>
+        <div class="flex justify-end gap-3">
+          <button type="button" data-close="submitModal"
+            class="px-4 py-2 rounded-lg bg-slate-800">Annuler</button>
+          <button id="publishBtn" type="submit"
+            class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500">Publier</button>
+        </div>
+      </form>
+    </section>
+  </div>
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const auth = getAuth(app);
-        
-        const appsRef = ref(db, 'apps');
-        const usersRef = ref(db, 'store_users');
+  <!-- ADMINISTRATION -->
+  <div id="adminPanelModal" hidden
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85">
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-5">
+        <h2 class="text-xl font-bold text-amber-400">Administration</h2>
+        <button data-close="adminPanelModal" aria-label="Fermer">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
 
-        let currentUser = null;
-        let allApps = [];
-        let allUsers = [];
-        let currentCategory = 'all';
-        let currentSearch = '';
+      <form id="createUserForm" class="space-y-3 mb-6">
+        <h3 class="font-semibold">Créer un compte contributeur</h3>
+        <input id="newUsername" required maxlength="120"
+          placeholder="E-mail ou identifiant"
+          class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
+        <input id="newUserTempPassword" type="password" required minlength="8"
+          autocomplete="new-password" placeholder="Mot de passe temporaire (8 caractères minimum)"
+          class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
+        <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600">
+          Créer le compte
+        </button>
+        <p id="createUserError" hidden class="text-sm text-rose-400"></p>
+      </form>
 
-        const appGrid = document.getElementById('appGrid');
-        const emptyState = document.getElementById('emptyState');
-        const searchInput = document.getElementById('searchInput');
-        const toastContainer = document.getElementById('toastContainer');
-        const userAccountSection = document.getElementById('userAccountSection');
-        const openSubmitModalBtn = document.getElementById('openSubmitModalBtn');
-        const openAdminPanelBtn = document.getElementById('openAdminPanelBtn');
-        const goToIndex2Btn = document.getElementById('goToIndex2Btn');
+      <h3 class="font-semibold mb-3">Comptes enregistrés</h3>
+      <div id="usersListContainer" class="space-y-2"></div>
+      <p class="text-xs text-slate-500 mt-4">
+        La création et la suppression des comptes exigent des règles Firebase
+        autorisant uniquement les administrateurs.
+      </p>
+    </section>
+  </div>
 
-        const loginModal = document.getElementById('loginModal');
-        const loginForm = document.getElementById('loginForm');
-        const loginErrorMsg = document.getElementById('loginErrorMsg');
-        const loginErrorText = document.getElementById('loginErrorText');
-        const submitModal = document.getElementById('submitModal');
-        const addAppForm = document.getElementById('addAppForm');
-        const adminPanelModal = document.getElementById('adminPanelModal');
-        const createUserForm = document.getElementById('createUserForm');
+  <script type="module">
+    import { initializeApp } from
+      "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 
-        document.getElementById('closeLoginModalBtn').onclick = () => loginModal.classList.add('hidden');
-        document.getElementById('closeSubmitModalBtn').onclick = () => submitModal.classList.add('hidden');
-        document.getElementById('cancelSubmitModalBtn').onclick = () => submitModal.classList.add('hidden');
-        document.getElementById('closeAdminPanelModalBtn').onclick = () => adminPanelModal.classList.add('hidden');
-        openSubmitModalBtn.onclick = () => submitModal.classList.remove('hidden');
-        openAdminPanelBtn.onclick = () => adminPanelModal.classList.remove('hidden');
+    import {
+      getDatabase, ref, onValue, push, remove, set, get
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        async function hashPassword(password) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(password);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    import {
+      getAuth, signInWithEmailAndPassword, signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDBd_NPKinJ6Vu4Wk_98rNaM75NBNMaGdo",
+      authDomain: "openstore-be393.firebaseapp.com",
+      databaseURL: "https://openstore-be393-default-rtdb.firebaseio.com",
+      projectId: "openstore-be393",
+      storageBucket: "openstore-be393.firebasestorage.app",
+      messagingSenderId: "615451083226",
+      appId: "1:615451083226:web:2ccfdad00c8474088180e3",
+      measurementId: "G-1CRYGEK1G0"
+    };
+
+    const $ = id => document.getElementById(id);
+
+    const state = {
+      currentUser: null,
+      apps: [],
+      users: [],
+      category: "all",
+      search: "",
+      appsLoaded: false,
+      appsError: null,
+      usersError: null
+    };
+
+    let db;
+    let auth;
+    let unsubscribeApps = null;
+    let unsubscribeUsers = null;
+
+    function showToast(message, type = "info") {
+      const toast = document.createElement("div");
+      const colors = {
+        success: "bg-emerald-700",
+        error: "bg-rose-700",
+        info: "bg-indigo-700"
+      };
+
+      toast.className =
+        `p-3 rounded-xl shadow-xl text-sm ${colors[type] || colors.info}`;
+
+      // textContent évite d'interpréter les messages comme du HTML.
+      toast.textContent = message;
+      $("toastContainer").appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    function openModal(id) {
+      $(id).hidden = false;
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeModal(id) {
+      $(id).hidden = true;
+
+      if (!["loginModal", "submitModal", "adminPanelModal"]
+          .some(modalId => !$(modalId).hidden)) {
+        document.body.style.overflow = "";
+      }
+    }
+
+    document.querySelectorAll("[data-close]").forEach(button => {
+      button.addEventListener("click", () => closeModal(button.dataset.close));
+    });
+
+    // FIX : le bouton de connexion fonctionne dès le premier affichage.
+    $("openLoginModalBtn").addEventListener("click", () => {
+      $("loginErrorText").hidden = true;
+      openModal("loginModal");
+    });
+
+    $("openSubmitModalBtn").addEventListener("click", () => {
+      if (!state.currentUser) {
+        showToast("Connecte-toi avant d'ajouter une application.", "error");
+        openModal("loginModal");
+        return;
+      }
+      openModal("submitModal");
+    });
+
+    $("openAdminPanelBtn").addEventListener("click", () => {
+      if (state.currentUser?.role !== "admin") {
+        showToast("Accès administrateur requis.", "error");
+        return;
+      }
+      openModal("adminPanelModal");
+    });
+
+    $("retryLoadBtn").addEventListener("click", () => {
+      $("loadError").hidden = true;
+      $("loadingMessage").hidden = false;
+      startAppsListener();
+    });
+
+    function safeText(value, fallback = "") {
+      return typeof value === "string" ? value : fallback;
+    }
+
+    function safeUrl(value) {
+      try {
+        const url = new URL(value);
+        if (url.protocol === "https:" || url.protocol === "http:") {
+          return url.href;
         }
+      } catch (_) {}
+      return "";
+    }
 
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            const bgClass = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-brand-600';
-            toast.className = `px-4 py-2.5 rounded-xl text-xs font-medium text-white ${bgClass} shadow-xl flex items-center gap-2 transition-all duration-300 pointer-events-auto transform translate-y-2 opacity-0`;
-            toast.innerHTML = `<i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info'}" class="w-4 h-4"></i><span>${message}</span>`;
-            
-            toastContainer.appendChild(toast);
-            lucide.createIcons();
-            
-            setTimeout(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            }, 10);
+    function setStatus(message, online = false) {
+      $("connectionStatus").textContent = message;
+      $("connectionStatus").className = online
+        ? "text-xs text-emerald-400 mt-1"
+        : "text-xs text-slate-400 mt-1";
+    }
 
-            setTimeout(() => {
-                toast.classList.add('opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3500);
-        }
+    function explainFirebaseError(error) {
+      const code = error?.code || "";
 
-        // SUPPORTE LA CONNEXION PAR FIREBASE AUTH ET BASE DE DONNÉES
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = {
-                    username: user.email || user.uid,
-                    role: 'admin'
-                };
-                updateUserUI();
-            }
+      const messages = {
+        "auth/invalid-credential": "Identifiants incorrects.",
+        "auth/invalid-login-credentials": "E-mail ou mot de passe incorrect.",
+        "auth/user-not-found": "Aucun compte Firebase correspondant.",
+        "auth/wrong-password": "Mot de passe incorrect.",
+        "auth/too-many-requests": "Trop de tentatives. Réessaie plus tard.",
+        "auth/operation-not-allowed": "Active la connexion par e-mail/mot de passe dans Firebase Authentication.",
+        "auth/network-request-failed": "Connexion Internet indisponible.",
+        "PERMISSION_DENIED": "Accès refusé par les règles Firebase.",
+        "permission-denied": "Accès refusé par les règles Firebase."
+      };
+
+      if (messages[code]) return messages[code];
+      if (code.includes("permission-denied")) {
+        return "Accès refusé. Vérifie les règles Realtime Database.";
+      }
+      return error?.message || "Une erreur inconnue est survenue.";
+    }
+
+    function isAdmin(userRecord) {
+      return userRecord?.role === "admin";
+    }
+
+    function emailKey(email) {
+      return email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+    }
+
+    async function getUserRecord(user) {
+      // Le rôle provient de la base, jamais de la seule connexion.
+      const email = (user.email || "").toLowerCase();
+
+      if (!email) return null;
+
+      const snapshot = await get(ref(db, "store_users/" + emailKey(email)));
+      if (!snapshot.exists()) return null;
+
+      const record = snapshot.val();
+
+      if (!record || String(record.username || "").toLowerCase() !== email) {
+        return null;
+      }
+
+      return record;
+    }
+
+    function updateUserUI() {
+      const user = state.currentUser;
+      const section = $("userAccountSection");
+
+      section.replaceChildren();
+
+      if (!user) {
+        const button = document.createElement("button");
+        button.id = "openLoginModalBtn";
+        button.className =
+          "px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm";
+        button.textContent = "Connexion";
+
+        // FIX : événement attaché aussi après reconstruction du bouton.
+        button.addEventListener("click", () => {
+          $("loginErrorText").hidden = true;
+          openModal("loginModal");
         });
 
-        onValue(usersRef, (snapshot) => {
-            const data = snapshot.val();
-            allUsers = data ? Object.keys(data).map(k => ({ key: k, ...data[k] })) : [];
-            renderUsersList();
+        section.appendChild(button);
+        $("openSubmitModalBtn").hidden = true;
+        $("openAdminPanelBtn").hidden = true;
+        $("goToIndex2Btn").hidden = true;
+        return;
+      }
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "flex items-center gap-2 flex-wrap";
+
+      const label = document.createElement("span");
+      label.className =
+        "text-xs text-slate-300 max-w-36 truncate";
+      label.textContent = user.username + " (" + user.role + ")";
+
+      const logout = document.createElement("button");
+      logout.className =
+        "px-3 py-2 rounded-lg bg-slate-800 hover:bg-rose-800 text-sm";
+      logout.textContent = "Déconnexion";
+      logout.addEventListener("click", async () => {
+        try {
+          await signOut(auth);
+          showToast("Déconnexion réussie.", "success");
+        } catch (error) {
+          showToast(explainFirebaseError(error), "error");
+        }
+      });
+
+      wrapper.append(label, logout);
+      section.appendChild(wrapper);
+
+      $("openSubmitModalBtn").hidden = false;
+      $("openAdminPanelBtn").hidden = !isAdmin(user);
+      $("goToIndex2Btn").hidden = !isAdmin(user);
+    }
+
+    // CONNEXION
+    $("loginForm").addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const email = $("loginUsername").value.trim().toLowerCase();
+      const password = $("loginPassword").value;
+      const errorBox = $("loginErrorText");
+      const submitButton = $("loginSubmitBtn");
+
+      errorBox.hidden = true;
+      submitButton.disabled = true;
+      submitButton.textContent = "Connexion...";
+
+      try {
+        if (!email.includes("@")) {
+          throw new Error(
+            "Cette version utilise Firebase Authentication : saisis ton adresse e-mail complète."
+          );
+        }
+
+        const credential = await signInWithEmailAndPassword(
+          auth, email, password
+        );
+
+        // Le rôle est déterminé après authentification.
+        let record = null;
+
+        try {
+          record = await getUserRecord(credential.user);
+        } catch (error) {
+          console.error("Lecture du profil impossible :", error);
+        }
+
+        state.currentUser = {
+          username: credential.user.email || email,
+          role: isAdmin(record) ? "admin" : "ami",
+          uid: credential.user.uid
+        };
+
+        updateUserUI();
+        closeModal("loginModal");
+        $("loginForm").reset();
+        showToast("Connexion réussie !", "success");
+      } catch (error) {
+        console.error("Erreur de connexion :", error);
+        errorBox.textContent = explainFirebaseError(error);
+        errorBox.hidden = false;
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Se connecter";
+      }
+    });
+
+    // L'état de connexion est traité dans les DEUX cas.
+    onAuthStateChanged(auth, async user => {
+      if (!user) {
+        state.currentUser = null;
+        updateUserUI();
+        return;
+      }
+
+      try {
+        const record = await getUserRecord(user);
+        state.currentUser = {
+          username: user.email || user.uid,
+          role: isAdmin(record) ? "admin" : "ami",
+          uid: user.uid
+        };
+      } catch (error) {
+        console.error("Impossible de vérifier le rôle :", error);
+        state.currentUser = {
+          username: user.email || user.uid,
+          role: "ami",
+          uid: user.uid
+        };
+        showToast("Profil non vérifié : droits limités.", "error");
+      }
+
+      updateUserUI();
+    });
+
+    // APPLICATIONS
+    function startAppsListener() {
+      if (unsubscribeApps) unsubscribeApps();
+
+      state.appsError = null;
+      $("loadError").hidden = true;
+      $("loadingMessage").hidden = false;
+      $("loadingMessage").textContent = "Chargement des applications...";
+
+      unsubscribeApps = onValue(
+        ref(db, "apps"),
+        snapshot => {
+          const data = snapshot.val() || {};
+
+          state.apps = Object.entries(data).map(([id, app]) => ({
+            id,
+            ...(app || {}),
+            name: safeText(app?.name, "Application sans nom"),
+            category: safeText(app?.category, "Utilitaires"),
+            description: safeText(app?.description),
+            author: safeText(app?.author, "Anonyme"),
+            downloadUrl: safeText(app?.downloadUrl),
+            repoUrl: safeText(app?.repoUrl),
+            iconUrl: safeText(app?.iconUrl)
+          }));
+
+          state.appsLoaded = true;
+          state.appsError = null;
+          $("loadingMessage").hidden = true;
+          $("loadError").hidden = true;
+          setStatus("Firebase connecté", true);
+          renderApps();
+        },
+        error => {
+          console.error("Erreur de lecture des applications :", error);
+          state.appsError = error;
+          $("loadingMessage").hidden = true;
+          $("loadError").hidden = false;
+          $("loadErrorText").textContent =
+            "Impossible de charger les applications : " +
+            explainFirebaseError(error);
+          setStatus("Erreur Firebase");
+        }
+      );
+    }
+
+    function createIconButton(iconName, label, onClick) {
+      const button = document.createElement("button");
+      button.className =
+        "p-2 rounded-lg bg-slate-800 hover:bg-slate-700";
+      button.title = label;
+      button.setAttribute("aria-label", label);
+
+      const icon = document.createElement("i");
+      icon.setAttribute("data-lucide", iconName);
+      icon.className = "w-4 h-4";
+
+      button.appendChild(icon);
+      button.addEventListener("click", onClick);
+      return button;
+    }
+
+    async function deleteApp(appId) {
+      if (state.currentUser?.role !== "admin") {
+        showToast("Droits administrateur requis.", "error");
+        return;
+      }
+
+      if (!confirm("Supprimer définitivement cette application ?")) return;
+
+      try {
+        await remove(ref(db, "apps/" + appId));
+        showToast("Application supprimée.", "success");
+      } catch (error) {
+        showToast(explainFirebaseError(error), "error");
+      }
+    }
+
+    function renderApps() {
+      const grid = $("appGrid");
+      grid.replaceChildren();
+
+      const term = state.search.toLocaleLowerCase("fr");
+
+      const filtered = state.apps.filter(app => {
+        const categoryMatch =
+          state.category === "all" || app.category === state.category;
+        const searchMatch =
+          (app.name + " " + app.description + " " + app.author)
+            .toLocaleLowerCase("fr").includes(term);
+        return categoryMatch && searchMatch;
+      });
+
+      $("emptyState").hidden =
+        filtered.length !== 0 || !state.appsLoaded || !!state.appsError;
+
+      for (const app of filtered) {
+        const card = document.createElement("article");
+        card.className =
+          "bg-slate-900 border border-slate-800 hover:border-indigo-500/60 rounded-2xl p-5 flex flex-col justify-between gap-5";
+
+        const top = document.createElement("div");
+        const heading = document.createElement("div");
+        heading.className = "flex items-start gap-3";
+
+        const iconUrl = safeUrl(app.iconUrl);
+        const img = document.createElement("img");
+        img.className =
+          "w-12 h-12 rounded-xl object-cover bg-slate-950 border border-slate-800";
+        img.alt = "";
+        img.loading = "lazy";
+        img.src = iconUrl || "https://placehold.co/64x64/0f172a/ffffff?text=APK";
+        img.addEventListener("error", () => {
+          img.src = "https://placehold.co/64x64/0f172a/ffffff?text=APK";
+        }, { once: true });
+
+        const details = document.createElement("div");
+        details.className = "min-w-0 flex-1";
+
+        const title = document.createElement("h2");
+        title.className = "font-bold break-words";
+        title.textContent = app.name;
+
+        const category = document.createElement("span");
+        category.className =
+          "inline-block mt-2 px-2 py-1 rounded bg-slate-800 text-xs text-slate-300";
+        category.textContent = app.category;
+
+        details.append(title, category);
+        heading.append(img, details);
+
+        if (state.currentUser?.role === "admin") {
+          heading.appendChild(createIconButton(
+            "trash-2", "Supprimer l'application", () => deleteApp(app.id)
+          ));
+        }
+
+        const description = document.createElement("p");
+        description.className = "text-sm text-slate-400 mt-4 whitespace-pre-wrap break-words";
+        description.textContent =
+          app.description || "Aucune description disponible.";
+
+        top.append(heading, description);
+
+        const footer = document.createElement("div");
+        footer.className =
+          "border-t border-slate-800 pt-4 flex items-center justify-between gap-3";
+
+        const author = document.createElement("span");
+        author.className = "text-xs text-slate-500 break-all";
+        author.textContent = "Par " + app.author;
+
+        const links = document.createElement("div");
+        links.className = "flex items-center gap-2 shrink-0";
+
+        const repoUrl = safeUrl(app.repoUrl);
+        if (repoUrl) {
+          const repo = document.createElement("a");
+          repo.href = repoUrl;
+          repo.target = "_blank";
+          repo.rel = "noopener noreferrer";
+          repo.className = "p-2 rounded-lg bg-slate-800 hover:bg-slate-700";
+          repo.title = "Code source";
+          const repoIcon = document.createElement("i");
+          repoIcon.setAttribute("data-lucide", "github");
+          repoIcon.className = "w-4 h-4";
+          repo.appendChild(repoIcon);
+          links.appendChild(repo);
+        }
+
+        const downloadUrl = safeUrl(app.downloadUrl);
+        if (downloadUrl) {
+          const download = document.createElement("a");
+          download.href = downloadUrl;
+          download.target = "_blank";
+          download.rel = "noopener noreferrer";
+          download.className =
+            "px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm";
+          download.textContent = "↓ Télécharger";
+          links.appendChild(download);
+        } else {
+          const invalid = document.createElement("span");
+          invalid.className = "text-xs text-slate-500";
+          invalid.textContent = "Lien indisponible";
+          links.appendChild(invalid);
+        }
+
+        footer.append(author, links);
+        card.append(top, footer);
+        grid.appendChild(card);
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    $("searchInput").addEventListener("input", event => {
+      state.search = event.target.value;
+      renderApps();
+    });
+
+    document.querySelectorAll(".category-btn").forEach(button => {
+      button.addEventListener("click", () => {
+        state.category = button.dataset.category;
+
+        document.querySelectorAll(".category-btn").forEach(item => {
+          item.classList.remove("bg-indigo-600", "text-white");
+          item.classList.add("bg-slate-800");
         });
 
-        onValue(appsRef, (snapshot) => {
-            const data = snapshot.val();
-            allApps = data ? Object.keys(data).map(k => ({ id: k, ...data[k] })) : [];
-            renderApps();
+        button.classList.add("bg-indigo-600", "text-white");
+        button.classList.remove("bg-slate-800");
+        renderApps();
+      });
+    });
+
+    // AJOUT D'APPLICATION
+    $("addAppForm").addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const error = $("addAppError");
+      error.hidden = true;
+
+      if (!state.currentUser) {
+        error.textContent = "Connecte-toi avant de publier.";
+        error.hidden = false;
+        return;
+      }
+
+      const downloadUrl = safeUrl($("appDownloadUrl").value.trim());
+      const repoValue = $("appRepoUrl").value.trim();
+      const iconValue = $("appIconUrl").value.trim();
+
+      if (!downloadUrl) {
+        error.textContent = "Le lien de téléchargement doit être une URL HTTP ou HTTPS valide.";
+        error.hidden = false;
+        return;
+      }
+
+      if (repoValue && !safeUrl(repoValue)) {
+        error.textContent = "Le lien du code source est invalide.";
+        error.hidden = false;
+        return;
+      }
+
+      if (iconValue && !safeUrl(iconValue)) {
+        error.textContent = "Le lien de l'icône est invalide.";
+        error.hidden = false;
+        return;
+      }
+
+      const button = $("publishBtn");
+      button.disabled = true;
+      button.textContent = "Publication...";
+
+      try {
+        await push(ref(db, "apps"), {
+          name: $("appName").value.trim(),
+          category: $("appCategory").value,
+          downloadUrl,
+          repoUrl: safeUrl(repoValue),
+          iconUrl: safeUrl(iconValue),
+          description: $("appDescription").value.trim(),
+          author: state.currentUser.username,
+          createdAt: Date.now()
         });
 
-        // TENTATIVE DE CONNEXION DOUBLE (FIREBASE AUTH PUIS DATABASE RECHERCHE PAR EMAIL)
-        loginForm.onsubmit = async (e) => {
-            e.preventDefault();
-            loginErrorMsg.classList.add('hidden');
-            
-            const identifier = document.getElementById('loginUsername').value.trim().toLowerCase();
-            const password = document.getElementById('loginPassword').value;
+        $("addAppForm").reset();
+        closeModal("submitModal");
+        showToast("Application publiée !", "success");
+      } catch (err) {
+        console.error(err);
+        error.textContent = explainFirebaseError(err);
+        error.hidden = false;
+      } finally {
+        button.disabled = false;
+        button.textContent = "Publier";
+      }
+    });
 
-            // 1. Essai via Firebase Auth (si e-mail)
-            if (identifier.includes('@')) {
-                try {
-                    const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
-                    currentUser = { username: userCredential.user.email, role: 'admin' };
-                    updateUserUI();
-                    loginModal.classList.add('hidden');
-                    loginForm.reset();
-                    showToast(`Bienvenue ${currentUser.username} !`, 'success');
-                    return;
-                } catch (err) {
-                    console.log("Échec Firebase Auth, tentative par Realtime Database...");
-                }
+    // COMPTES CONTRIBUTEURS
+    function renderUsersList() {
+      const container = $("usersListContainer");
+      container.replaceChildren();
+
+      if (state.usersError) {
+        const error = document.createElement("p");
+        error.className = "text-sm text-rose-400";
+        error.textContent = explainFirebaseError(state.usersError);
+        container.appendChild(error);
+        return;
+      }
+
+      if (!state.users.length) {
+        const empty = document.createElement("p");
+        empty.className = "text-sm text-slate-500";
+        empty.textContent = "Aucun compte contributeur enregistré.";
+        container.appendChild(empty);
+        return;
+      }
+
+      for (const user of state.users) {
+        const row = document.createElement("div");
+        row.className =
+          "flex items-center justify-between gap-3 p-3 rounded-lg bg-slate-950 border border-slate-800";
+
+        const label = document.createElement("span");
+        label.className = "text-sm break-all";
+        label.textContent =
+          safeText(user.username, user.key) + " (" +
+          safeText(user.role, "ami") + ")";
+
+        row.appendChild(label);
+
+        if (user.role !== "admin") {
+          row.appendChild(createIconButton(
+            "trash-2", "Supprimer ce profil", async () => {
+              if (state.currentUser?.role !== "admin") return;
+              if (!confirm("Supprimer ce profil de la base de données ?")) return;
+
+              try {
+                await remove(ref(db, "store_users/" + user.key));
+                showToast("Profil supprimé.", "success");
+              } catch (err) {
+                showToast(explainFirebaseError(err), "error");
+              }
             }
-
-            // 2. Essai via Realtime Database (E-mail ou Pseudo + Hash SHA256)
-            const inputHash = await hashPassword(password);
-            const userFound = allUsers.find(u => 
-                (u.username.toLowerCase() === identifier || u.key.toLowerCase() === identifier.replace(/[^a-z0-9]/g, '_')) 
-                && u.passwordHash === inputHash
-            );
-
-            if (userFound) {
-                currentUser = { username: userFound.username, role: userFound.role };
-                updateUserUI();
-                loginModal.classList.add('hidden');
-                loginForm.reset();
-                showToast(`Bienvenue ${currentUser.username} (${currentUser.role}) !`, 'success');
-            } else {
-                loginErrorText.innerText = "Adresse e-mail, identifiant ou mot de passe incorrect.";
-                loginErrorMsg.classList.remove('hidden');
-            }
-        };
-
-        async function doLogout() {
-            try {
-                await signOut(auth);
-            } catch(e){}
-            currentUser = null;
-            updateUserUI();
-            showToast("Déconnexion réussie.", "info");
+          ));
         }
 
-        function updateUserUI() {
-            if (currentUser) {
-                userAccountSection.innerHTML = `
-                    <div class="flex items-center gap-2">
-                        <div class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full ${currentUser.role === 'admin' ? 'bg-amber-400' : 'bg-brand-400'}"></span>
-                            <span class="font-bold text-slate-200">${currentUser.username}</span>
-                            <span class="text-[10px] text-slate-400 uppercase">(${currentUser.role})</span>
-                        </div>
-                        <button id="logoutBtn" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-rose-400 transition" title="Déconnexion">
-                            <i data-lucide="log-out" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                `;
-                document.getElementById('logoutBtn').onclick = doLogout;
+        container.appendChild(row);
+      }
 
-                openSubmitModalBtn.classList.remove('hidden');
-                if (currentUser.role === 'admin') {
-                    openAdminPanelBtn.classList.remove('hidden');
-                    goToIndex2Btn.classList.remove('hidden');
-                } else {
-                    openAdminPanelBtn.classList.add('hidden');
-                    goToIndex2Btn.classList.add('hidden');
-                }
-            } else {
-                userAccountSection.innerHTML = `
-                    <button id="openLoginModalBtn" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-medium text-sm transition active:scale-95">
-                        <i data-lucide="log-in" class="w-4 h-4 text-brand-400"></i>
-                        <span>Connexion</span>
-                    </button>
-                `;
-                document.getElementById('openLoginModalBtn').onclick = () => loginModal.classList.remove('hidden');
-                openSubmitModalBtn.classList.add('hidden');
-                openAdminPanelBtn.classList.add('hidden');
-                goToIndex2Btn.classList.add('hidden');
-            }
-            renderApps();
-            lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    $("createUserForm").addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const error = $("createUserError");
+      error.hidden = true;
+
+      if (state.currentUser?.role !== "admin") {
+        error.textContent = "Droits administrateur requis.";
+        error.hidden = false;
+        return;
+      }
+
+      error.textContent =
+        "La création de comptes doit passer par Firebase Authentication ou un serveur de confiance. Elle n'est pas activée dans cette version.";
+      error.hidden = false;
+    });
+
+    // INITIALISATION
+    try {
+      const firebaseApp = initializeApp(firebaseConfig);
+      db = getDatabase(firebaseApp);
+      auth = getAuth(firebaseApp);
+
+      startAppsListener();
+
+      unsubscribeUsers = onValue(
+        ref(db, "store_users"),
+        snapshot => {
+          const data = snapshot.val() || {};
+          state.users = Object.entries(data).map(([key, value]) => ({
+            key,
+            ...(value || {})
+          }));
+          state.usersError = null;
+          renderUsersList();
+        },
+        error => {
+          console.error("Erreur de lecture des comptes :", error);
+          state.usersError = error;
+          renderUsersList();
         }
+      );
 
-        createUserForm.onsubmit = async (e) => {
-            e.preventDefault();
-            if (!currentUser || currentUser.role !== 'admin') return;
+      setStatus("Firebase initialisé");
+    } catch (error) {
+      console.error("Initialisation Firebase impossible :", error);
+      setStatus("Erreur d'initialisation");
+      $("loadingMessage").hidden = true;
+      $("loadError").hidden = false;
+      $("loadErrorText").textContent =
+        "Impossible d'initialiser Firebase : " + explainFirebaseError(error);
+    }
 
-            const username = document.getElementById('newUsername').value.trim();
-            const tempPassword = document.getElementById('newUserTempPassword').value.trim();
+    document.querySelectorAll("[id$='Modal']").forEach(modal => {
+      modal.addEventListener("click", event => {
+        if (event.target === modal) closeModal(modal.id);
+      });
+    });
 
-            if (!username || !tempPassword) return;
-
-            const cleanKey = username.toLowerCase().replace(/[^a-z0-9]/g, '_');
-            const passHash = await hashPassword(tempPassword);
-
-            await set(ref(db, `store_users/${cleanKey}`), {
-                username: username,
-                passwordHash: passHash,
-                role: 'ami',
-                createdAt: Date.now()
-            });
-
-            createUserForm.reset();
-            showToast(`Compte pour "${username}" créé !`, 'success');
-        };
-
-        window.deleteUser = async (key, name) => {
-            if (!currentUser || currentUser.role !== 'admin') return;
-            if (name === 'admin') {
-                showToast("Impossible de supprimer l'admin principal.", "error");
-                return;
-            }
-            if (confirm(`Supprimer l'accès pour "${name}" ?`)) {
-                await remove(ref(db, `store_users/${key}`));
-                showToast(`Compte "${name}" supprimé.`, 'info');
-            }
-        };
-
-        function renderUsersList() {
-            const container = document.getElementById('usersListContainer');
-            if (allUsers.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-500">Aucun utilisateur enregistré.</p>`;
-                return;
-            }
-
-            container.innerHTML = allUsers.map(u => `
-                <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between text-xs">
-                    <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 rounded-lg ${u.role === 'admin' ? 'bg-amber-500/10 text-amber-400' : 'bg-brand-500/10 text-brand-400'} flex items-center justify-center font-bold">
-                            ${u.username.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                            <span class="font-bold text-slate-200">${u.username}</span>
-                            <span class="ml-2 text-[10px] px-1.5 py-0.5 rounded ${u.role === 'admin' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400'}">${u.role}</span>
-                        </div>
-                    </div>
-                    ${u.role !== 'admin' ? `
-                        <button onclick="deleteUser('${u.key}', '${u.username}')" class="text-slate-500 hover:text-rose-400 p-1 transition">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    ` : `<span class="text-[10px] text-slate-600 font-mono">Principal</span>`}
-                </div>
-            `).join('');
-            lucide.createIcons();
-        }
-
-        addAppForm.onsubmit = async (e) => {
-            e.preventDefault();
-            if (!currentUser) {
-                showToast("Connexion requise.", "error");
-                return;
-            }
-
-            const newApp = {
-                name: document.getElementById('appName').value,
-                category: document.getElementById('appCategory').value,
-                downloadUrl: document.getElementById('appDownloadUrl').value,
-                repoUrl: document.getElementById('appRepoUrl').value || '',
-                iconUrl: document.getElementById('appIconUrl').value || '',
-                description: document.getElementById('appDescription').value || '',
-                author: currentUser.username,
-                createdAt: Date.now()
-            };
-
-            await push(appsRef, newApp);
-            addAppForm.reset();
-            submitModal.classList.add('hidden');
-            showToast("Application ajoutée avec succès !", "success");
-        };
-
-        window.deleteApp = async (appId) => {
-            if (!currentUser || currentUser.role !== 'admin') return;
-            if (confirm("Voulez-vous vraiment supprimer cette application ?")) {
-                await remove(ref(db, `apps/${appId}`));
-                showToast("Application supprimée.", "info");
-            }
-        };
-
-        function renderApps() {
-            let filtered = allApps.filter(app => {
-                const matchCat = currentCategory === 'all' || app.category === currentCategory;
-                const matchSearch = app.name.toLowerCase().includes(currentSearch.toLowerCase()) || 
-                                    app.description.toLowerCase().includes(currentSearch.toLowerCase());
-                return matchCat && matchSearch;
-            });
-
-            if (filtered.length === 0) {
-                appGrid.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                return;
-            }
-
-            emptyState.classList.add('hidden');
-            appGrid.innerHTML = filtered.map(app => `
-                <div class="bg-slate-900/80 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 flex flex-col justify-between transition group shadow-lg">
-                    <div>
-                        <div class="flex items-start justify-between gap-3 mb-4">
-                            <div class="flex items-center gap-3">
-                                <img src="${app.iconUrl || 'https://via.placeholder.com/64?text=APK'}" 
-                                     alt="${app.name}" 
-                                     class="w-12 h-12 rounded-xl object-cover bg-slate-950 border border-slate-800"
-                                     onerror="this.src='https://via.placeholder.com/64?text=APK'">
-                                <div>
-                                    <h3 class="font-bold text-slate-100 group-hover:text-brand-400 transition">${app.name}</h3>
-                                    <span class="inline-block px-2 py-0.5 mt-1 rounded text-[10px] font-medium bg-slate-800 text-slate-300">${app.category}</span>
-                                </div>
-                            </div>
-                            ${currentUser && currentUser.role === 'admin' ? `
-                                <button onclick="deleteApp('${app.id}')" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Supprimer">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            ` : ''}
-                        </div>
-                        <p class="text-xs text-slate-400 line-clamp-3 mb-4">${app.description || 'Aucune description disponible.'}</p>
-                    </div>
-
-                    <div class="pt-4 border-t border-slate-800/60 flex items-center justify-between gap-2">
-                        <span class="text-[10px] text-slate-500">Par ${app.author || 'Anonyme'}</span>
-                        <div class="flex items-center gap-2">
-                            ${app.repoUrl ? `
-                                <a href="${app.repoUrl}" target="_blank" class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 transition" title="Code Source">
-                                    <i data-lucide="github" class="w-4 h-4"></i>
-                                </a>
-                            ` : ''}
-                            <a href="${app.downloadUrl}" target="_blank" class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs transition flex items-center gap-1.5 shadow-md shadow-brand-600/20">
-                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                                <span>APK</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-
-            lucide.createIcons();
-        }
-
-        // ÉVÉNEMENTS RECHERCHE & CATÉGORIES
-        searchInput.oninput = (e) => {
-            currentSearch = e.target.value;
-            renderApps();
-        };
-
-        document.querySelectorAll('.category-btn').forEach(btn => {
-            btn.onclick = () => {
-                document.querySelectorAll('.category-btn').forEach(b => {
-                    b.classList.remove('bg-brand-600', 'text-white', 'active');
-                    b.classList.add('bg-slate-900', 'text-slate-400');
-                });
-                btn.classList.remove('bg-slate-900', 'text-slate-400');
-                btn.classList.add('bg-brand-600', 'text-white', 'active');
-                currentCategory = btn.dataset.category;
-                renderApps();
-            };
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        ["loginModal", "submitModal", "adminPanelModal"].forEach(id => {
+          if (!$(id).hidden) closeModal(id);
         });
+      }
+    });
 
-        lucide.createIcons();
-    </script>
+    if (window.lucide) lucide.createIcons();
+  </script>
 </body>
 </html>
