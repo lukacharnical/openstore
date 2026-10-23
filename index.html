@@ -572,33 +572,6 @@
       }
     });
 
-    // L'état de connexion est traité dans les DEUX cas.
-    onAuthStateChanged(auth, async user => {
-      if (!user) {
-        state.currentUser = null;
-        updateUserUI();
-        return;
-      }
-
-      try {
-        const record = await getUserRecord(user);
-        state.currentUser = {
-          username: user.email || user.uid,
-          role: isAdmin(record) ? "admin" : "ami",
-          uid: user.uid
-        };
-      } catch (error) {
-        console.error("Impossible de vérifier le rôle :", error);
-        state.currentUser = {
-          username: user.email || user.uid,
-          role: "ami",
-          uid: user.uid
-        };
-        showToast("Profil non vérifié : droits limités.", "error");
-      }
-
-      updateUserUI();
-    });
 
     // APPLICATIONS
     function startAppsListener() {
@@ -957,6 +930,34 @@
       const firebaseApp = initializeApp(firebaseConfig);
       db = getDatabase(firebaseApp);
       auth = getAuth(firebaseApp);
+      
+      // L'état de connexion est traité dans les DEUX cas.
+    onAuthStateChanged(auth, async user => {
+      if (!user) {
+        state.currentUser = null;
+        updateUserUI();
+        return;
+      }
+
+      try {
+        const record = await getUserRecord(user);
+        state.currentUser = {
+          username: user.email || user.uid,
+          role: isAdmin(record) ? "admin" : "ami",
+          uid: user.uid
+        };
+      } catch (error) {
+        console.error("Impossible de vérifier le rôle :", error);
+        state.currentUser = {
+          username: user.email || user.uid,
+          role: "ami",
+          uid: user.uid
+        };
+        showToast("Profil non vérifié : droits limités.", "error");
+      }
+
+      updateUserUI();
+    });
 
       startAppsListener();
 
