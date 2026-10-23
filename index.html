@@ -1,6 +1,4 @@
-from pathlib import Path
-
-html = r'''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr" class="dark">
 <head>
   <meta charset="UTF-8">
@@ -45,8 +43,7 @@ html = r'''<!DOCTYPE html>
         <div><h1 class="font-bold text-lg leading-none">OpenStore</h1><p id="connectionStatus" class="text-xs text-slate-400 mt-1">Connexion à Firebase...</p></div>
       </a>
       <div class="flex items-center justify-end gap-2 flex-wrap">
-        <a id="goToIndex2Btn" href="index2.html" hidden class="px-3 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-600 text-xs">Index2</a>
-        <button id="openAdminPanelBtn" hidden class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs"><i data-lucide="shield" class="w-4 h-4 inline"></i> Administration</button>
+        <a id="adminLink" href="admin.html" hidden class="px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 text-sm"><i data-lucide="shield-check" class="w-4 h-4 inline"></i> Administration</a>
         <button id="openSubmitModalBtn" hidden class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm"><i data-lucide="plus" class="w-4 h-4 inline"></i> Ajouter une App</button>
         <div id="userAccountSection"><button id="openLoginModalBtn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm"><i data-lucide="log-in" class="w-4 h-4 inline"></i> Connexion</button></div>
       </div>
@@ -121,7 +118,7 @@ html = r'''<!DOCTYPE html>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getDatabase, ref, onValue, push, remove, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  import { getDatabase, ref, onValue, push, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -139,10 +136,23 @@ html = r'''<!DOCTYPE html>
   const db = getDatabase(firebaseApp);
   const auth = getAuth(firebaseApp);
   const $ = id => document.getElementById(id);
-  const state = { currentUser: null, apps: [], users: [], category: "all", search: "", appsLoaded: false, appsError: null, usersError: null };
+  const state = { currentUser: null, currentRole: "", isAdmin: false, apps: [], category: "all", search: "", appsLoaded: false, appsError: null };
   let unsubscribeApps = null;
-  let unsubscribeUsers = null;
   const versionsCache = new Map();
+  const emailKey = value => String(value || "").toLowerCase().replace(/[.#$\[\]]/g, "_");
+  async function loadCurrentRole(user) {
+    state.currentRole = ""; state.isAdmin = false;
+    if (!user?.email) return;
+    try {
+      const snap = await get(ref(db, "store_users/" + emailKey(user.email)));
+      const record = snap.val() || {};
+      state.currentRole = String(record.role || "").toLowerCase();
+      state.isAdmin = ["admin", "administrateur"].includes(state.currentRole);
+    } catch (error) {
+      console.warn("Impossible de lire le rôle OpenStore", error);
+      state.isAdmin = false;
+    }
+  }
 
   function showToast(message, type = "info") {
     const toast = document.createElement("div");
@@ -155,17 +165,13 @@ html = r'''<!DOCTYPE html>
   function openModal(id) { $(id).hidden = false; document.body.style.overflow = "hidden"; }
   function closeModal(id) {
     $(id).hidden = true;
-    if (!["loginModal", "submitModal", "adminPanelModal"].some(modalId => !$(modalId).hidden)) document.body.style.overflow = "";
+    if (!["loginModal", "submitModal"].some(modalId => !$(modalId).hidden)) document.body.style.overflow = "";
   }
   document.querySelectorAll("[data-close]").forEach(button => button.addEventListener("click", () => closeModal(button.dataset.close)));
   $("openLoginModalBtn").addEventListener("click", () => { $("loginErrorText").hidden = true; openModal("loginModal"); });
   $("openSubmitModalBtn").addEventListener("click", () => {
     if (!state.currentUser) { showToast("Connecte-toi avant d'ajouter une application.", "error"); openModal("loginModal"); return; }
     openModal("submitModal");
-  });
-  $("openAdminPanelBtn").addEventListener("click", () => {
-    if (state.currentUser?.role !== "admin") { showToast("Accès administrateur requis.", "error"); return; }
-    openModal("adminPanelModal");
   });
   $("retryLoadBtn").addEventListener("click", () => { $("loadError").hidden = true; $("loadingMessage").hidden = false; startAppsListener(); });
 
@@ -195,19 +201,12 @@ html = r'''<!DOCTYPE html>
     if (code.includes("permission-denied")) return "Accès refusé. Vérifie les règles Realtime Database.";
     return error?.message || "Une erreur inconnue est survenue.";
   }
-  function isAdmin(userRecord) { return userRecord?.role === "admin"; }
-  function emailKey(email) { return email.toLowerCase().replace(/[^a-z0-9]/g, "_"); }
-  async function getUserRecord(user) {
-    const email = (user.email || "").toLowerCase();
-    if (!email) return null;
-    const snapshot = await get(ref(db, "store_users/" + emailKey(email)));
-    return snapshot.exists() ? snapshot.val() : null;
-  }
   function updateUserUI() {
     const user = state.currentUser;
     const section = $("userAccountSection");
     section.replaceChildren();
     if (!user) {
+      state.currentRole = ""; state.isAdmin = false;
       const button = document.createElement("button");
       button.id = "openLoginModalBtn";
       button.className = "px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm";
@@ -215,15 +214,14 @@ html = r'''<!DOCTYPE html>
       button.addEventListener("click", () => { $("loginErrorText").hidden = true; openModal("loginModal"); });
       section.appendChild(button);
       $("openSubmitModalBtn").hidden = true;
-      $("openAdminPanelBtn").hidden = true;
-      $("goToIndex2Btn").hidden = true;
+      $("adminLink").hidden = true;
       return;
     }
     const wrapper = document.createElement("div");
     wrapper.className = "flex items-center gap-2 flex-wrap";
     const label = document.createElement("span");
     label.className = "text-xs text-slate-300 max-w-36 truncate";
-    label.textContent = (user.username || user.email) + " (" + user.role + ")";
+    label.textContent = user.username || user.email;
     const logout = document.createElement("button");
     logout.className = "px-3 py-2 rounded-lg bg-slate-800 hover:bg-rose-800 text-sm";
     logout.textContent = "Déconnexion";
@@ -231,17 +229,12 @@ html = r'''<!DOCTYPE html>
     wrapper.append(label, logout);
     section.appendChild(wrapper);
     $("openSubmitModalBtn").hidden = false;
-    $("openAdminPanelBtn").hidden = !isAdmin(user);
-    $("goToIndex2Btn").hidden = !isAdmin(user);
-    if (isAdmin(user)) startUsersListener();
+    $("adminLink").hidden = !state.isAdmin;
     renderApps();
   }
   onAuthStateChanged(auth, async user => {
-    if (user) {
-      let record = null;
-      try { record = await getUserRecord(user); } catch (e) { console.error("Erreur profil user:", e); }
-      state.currentUser = { username: (user.email || "").toLowerCase(), email: (user.email || "").toLowerCase(), role: record?.role || "ami", uid: user.uid };
-    } else state.currentUser = null;
+    state.currentUser = user ? { username: (user.email || "").toLowerCase(), email: (user.email || "").toLowerCase(), uid: user.uid } : null;
+    await loadCurrentRole(user);
     updateUserUI();
   });
   $("loginForm").addEventListener("submit", async event => {
@@ -254,9 +247,8 @@ html = r'''<!DOCTYPE html>
     try {
       if (!email.includes("@")) throw new Error("Saisis ton adresse e-mail complète.");
       const credential = await signInWithEmailAndPassword(auth, email, password);
-      let record = null;
-      try { record = await getUserRecord(credential.user); } catch (error) { console.error("Lecture du profil impossible :", error); }
-      state.currentUser = { username: (credential.user.email || email).toLowerCase(), email: (credential.user.email || email).toLowerCase(), role: record?.role || "ami", uid: credential.user.uid };
+      state.currentUser = { username: (credential.user.email || email).toLowerCase(), email: (credential.user.email || email).toLowerCase(), uid: credential.user.uid };
+      await loadCurrentRole(credential.user);
       updateUserUI(); closeModal("loginModal"); $("loginForm").reset(); showToast("Connexion réussie !", "success");
     } catch (error) { console.error("Erreur de connexion :", error); errorBox.textContent = explainFirebaseError(error); errorBox.hidden = false; }
     finally { submitButton.disabled = false; submitButton.textContent = "Se connecter"; }
@@ -473,15 +465,6 @@ html = r'''<!DOCTYPE html>
       setStatus("Erreur Firebase");
     });
   }
-  function startUsersListener() {
-    if (unsubscribeUsers) unsubscribeUsers();
-    state.usersError = null;
-    unsubscribeUsers = onValue(ref(db, "store_users"), snapshot => {
-      const data = snapshot.val() || {};
-      state.users = Object.entries(data).map(([key, u]) => ({ key, username: safeText(u?.username, key), role: safeText(u?.role, "ami") }));
-      state.usersError = null; renderUsersList();
-    }, error => { state.usersError = error; renderUsersList(); });
-  }
   function createIconButton(iconName, label, onClick, extraClasses = "hover:bg-slate-700") {
     const button = document.createElement("button");
     button.className = `p-2 rounded-lg bg-slate-800 ${extraClasses}`;
@@ -489,14 +472,18 @@ html = r'''<!DOCTYPE html>
     const icon = document.createElement("i"); icon.setAttribute("data-lucide", iconName); icon.className = "w-4 h-4";
     button.appendChild(icon); button.addEventListener("click", onClick); return button;
   }
-  async function deleteApp(appId, appAuthor) {
-    const currentUser = state.currentUser;
-    const isOwner = currentUser && currentUser.username === appAuthor;
-    const isAdministrator = currentUser?.role === "admin";
-    if (!isOwner && !isAdministrator) { showToast("Seul l'auteur de l'application ou un admin peut la supprimer.", "error"); return; }
-    if (!confirm("Supprimer définitivement cette application ?")) return;
-    try { await remove(ref(db, "apps/" + appId)); showToast("Application supprimée avec succès.", "success"); }
-    catch (error) { showToast(explainFirebaseError(error), "error"); }
+  async function deleteApp(appId) {
+    if (!state.currentUser || !state.isAdmin) {
+      showToast("Seuls les administrateurs peuvent supprimer une application.", "error");
+      return;
+    }
+    if (!confirm("Supprimer définitivement cette application du catalogue ? Cette action est irréversible.")) return;
+    try {
+      await remove(ref(db, "apps/" + appId));
+      showToast("Application supprimée.", "success");
+    } catch (error) {
+      showToast(explainFirebaseError(error), "error");
+    }
   }
 
   function renderApps() {
@@ -521,9 +508,7 @@ html = r'''<!DOCTYPE html>
       const title = document.createElement("h2"); title.className = "font-bold break-words"; title.textContent = app.name;
       const category = document.createElement("span"); category.className = "inline-block mt-2 px-2 py-1 rounded bg-slate-800 text-xs text-slate-300"; category.textContent = app.category;
       details.append(title, category); heading.append(img, details);
-      const isOwner = state.currentUser && state.currentUser.username === app.author;
-      const isAdministrator = state.currentUser?.role === "admin";
-      if (isOwner || isAdministrator) heading.appendChild(createIconButton("trash-2", "Supprimer l'application", () => deleteApp(app.id, app.author), "hover:bg-rose-800 text-rose-400 hover:text-white"));
+      if (state.currentUser && state.isAdmin) heading.appendChild(createIconButton("trash-2", "Supprimer l’application (administrateur)", () => deleteApp(app.id), "hover:bg-rose-800 text-rose-400 hover:text-white"));
       const description = document.createElement("p"); description.className = "text-sm text-slate-400 mt-4 whitespace-pre-wrap break-words"; description.textContent = app.description || "Aucune description disponible.";
       top.append(heading, description);
 
@@ -581,46 +566,8 @@ html = r'''<!DOCTYPE html>
     } catch (err) { console.error(err); error.textContent = explainFirebaseError(err); error.hidden = false; }
     finally { button.disabled = false; button.textContent = "Publier"; }
   });
-
-  $("createUserForm").addEventListener("submit", async event => {
-    event.preventDefault();
-    const error = $("createUserError"); error.hidden = true;
-    if (state.currentUser?.role !== "admin") { error.textContent = "Seul un administrateur peut ajouter des rôles."; error.hidden = false; return; }
-    const newEmail = $("newUsername").value.trim().toLowerCase(); const newRole = $("newUserRole").value;
-    if (!newEmail || !newEmail.includes("@")) { error.textContent = "Saisis un e-mail valide."; error.hidden = false; return; }
-    const btn = $("createUserSubmitBtn"); btn.disabled = true; btn.textContent = "Ajout en cours...";
-    try {
-      const targetKey = emailKey(newEmail);
-      await set(ref(db, "store_users/" + targetKey), { username: newEmail, role: newRole, createdBy: state.currentUser.username, createdAt: Date.now() });
-      $("createUserForm").reset(); showToast(`Utilisateur ${newEmail} enregistré sous le rôle ${newRole} !`, "success");
-    } catch (err) { console.error(err); error.textContent = explainFirebaseError(err); error.hidden = false; }
-    finally { btn.disabled = false; btn.textContent = "Ajouter au répertoire"; }
-  });
-
-  function renderUsersList() {
-    const container = $("usersListContainer"); container.replaceChildren();
-    if (state.usersError) { const error = document.createElement("p"); error.className = "text-sm text-rose-400"; error.textContent = explainFirebaseError(state.usersError); container.appendChild(error); return; }
-    if (!state.users.length) { const empty = document.createElement("p"); empty.className = "text-sm text-slate-500"; empty.textContent = "Aucun utilisateur enregistré."; container.appendChild(empty); return; }
-    for (const user of state.users) {
-      const row = document.createElement("div"); row.className = "flex items-center justify-between gap-3 p-3 rounded-lg bg-slate-950 border border-slate-800";
-      const label = document.createElement("span"); label.className = "text-sm break-all"; label.textContent = safeText(user.username, user.key) + " (" + safeText(user.role, "ami") + ")";
-      const delBtn = document.createElement("button"); delBtn.className = "text-xs text-rose-400 hover:text-rose-300 p-1"; delBtn.textContent = "Supprimer";
-      delBtn.addEventListener("click", async () => {
-        if (state.currentUser?.role !== "admin") { showToast("Accès administrateur requis.", "error"); return; }
-        if (confirm(`Supprimer le profil de ${user.username} ?`)) {
-          try { await remove(ref(db, "store_users/" + user.key)); showToast("Rôle supprimé.", "success"); }
-          catch (err) { showToast(explainFirebaseError(err), "error"); }
-        }
-      });
-      row.append(label, delBtn); container.appendChild(row);
-    }
-  }
   startAppsListener();
   if (window.lucide) window.lucide.createIcons();
 </script>
 </body>
 </html>
-'''
-path = Path("/mnt/data/index.html")
-path.write_text(html, encoding="utf-8")
-print(f"Fichier créé : {path} ({len(html)} caractères)")
