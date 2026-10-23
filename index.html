@@ -139,7 +139,8 @@
   const state = { currentUser: null, currentRole: "", isAdmin: false, apps: [], category: "all", search: "", appsLoaded: false, appsError: null };
   let unsubscribeApps = null;
   const versionsCache = new Map();
-  const emailKey = value => String(value || "").toLowerCase().replace(/[.#$\[\]]/g, "_");
+  const emailKey = value =>
+  String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "_");
   async function loadCurrentRole(user) {
     state.currentRole = ""; state.isAdmin = false;
     if (!user?.email) return;
