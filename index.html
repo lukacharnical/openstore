@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr" class="dark">
 <head>
@@ -267,25 +266,32 @@
       </div>
 
       <form id="createUserForm" class="space-y-3 mb-6">
-        <h3 class="font-semibold">Créer un compte contributeur</h3>
+        <h3 class="font-semibold">Ajouter un utilisateur dans la base</h3>
         <input id="newUsername" required maxlength="120"
-          placeholder="E-mail ou identifiant"
+          placeholder="E-mail (ex: ami@openstore.com)"
           class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
-        <input id="newUserTempPassword" type="password" required minlength="8"
-          autocomplete="new-password" placeholder="Mot de passe temporaire (8 caractères minimum)"
-          class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
-        <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600">
-          Créer le compte
+        
+        <div>
+          <label for="newUserRole" class="block text-xs text-slate-400 mb-1">Rôle de l'utilisateur :</label>
+          <select id="newUserRole" required
+            class="w-full p-3 rounded-lg bg-slate-950 border border-slate-700">
+            <option value="ami">Ami</option>
+            <option value="invite">Invité</option>
+            <option value="testeur">Testeur</option>
+            <option value="codeur">Codeur</option>
+            <option value="programmeur">Programmeur</option>
+            <option value="admin">Administrateur</option>
+          </select>
+        </div>
+
+        <button type="submit" id="createUserSubmitBtn" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium">
+          Ajouter au répertoire
         </button>
         <p id="createUserError" hidden class="text-sm text-rose-400"></p>
       </form>
 
       <h3 class="font-semibold mb-3">Comptes enregistrés</h3>
       <div id="usersListContainer" class="space-y-2"></div>
-      <p class="text-xs text-slate-500 mt-4">
-        La création et la suppression des comptes exigent des règles Firebase
-        autorisant uniquement les administrateurs.
-      </p>
     </section>
   </div>
 
@@ -313,6 +319,10 @@
       measurementId: "G-1CRYGEK1G0"
     };
 
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+
     const $ = id => document.getElementById(id);
 
     const state = {
@@ -326,8 +336,6 @@
       usersError: null
     };
 
-    let db;
-    let auth;
     let unsubscribeApps = null;
     let unsubscribeUsers = null;
 
@@ -342,7 +350,6 @@
       toast.className =
         `p-3 rounded-xl shadow-xl text-sm ${colors[type] || colors.info}`;
 
-      // textContent évite d'interpréter les messages comme du HTML.
       toast.textContent = message;
       $("toastContainer").appendChild(toast);
       setTimeout(() => toast.remove(), 4000);
@@ -366,7 +373,6 @@
       button.addEventListener("click", () => closeModal(button.dataset.close));
     });
 
-    // FIX : le bouton de connexion fonctionne dès le premier affichage.
     $("openLoginModalBtn").addEventListener("click", () => {
       $("loginErrorText").hidden = true;
       openModal("loginModal");
@@ -447,21 +453,13 @@
     }
 
     async function getUserRecord(user) {
-      // Le rôle provient de la base, jamais de la seule connexion.
       const email = (user.email || "").toLowerCase();
-
       if (!email) return null;
 
       const snapshot = await get(ref(db, "store_users/" + emailKey(email)));
       if (!snapshot.exists()) return null;
 
-      const record = snapshot.val();
-
-      if (!record || String(record.username || "").toLowerCase() !== email) {
-        return null;
-      }
-
-      return record;
+      return snapshot.val();
     }
 
     function updateUserUI() {
@@ -477,7 +475,6 @@
           "px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm";
         button.textContent = "Connexion";
 
-        // FIX : événement attaché aussi après reconstruction du bouton.
         button.addEventListener("click", () => {
           $("loginErrorText").hidden = true;
           openModal("loginModal");
@@ -517,9 +514,33 @@
       $("openSubmitModalBtn").hidden = false;
       $("openAdminPanelBtn").hidden = !isAdmin(user);
       $("goToIndex2Btn").hidden = !isAdmin(user);
+
+      if (isAdmin(user)) {
+        startUsersListener();
+      }
+
+      renderApps();
     }
 
-    // CONNEXION
+    onAuthStateChanged(auth, async user => {
+      if (user) {
+        let record = null;
+        try {
+          record = await getUserRecord(user);
+        } catch (e) {
+          console.error("Erreur profil user:", e);
+        }
+        state.currentUser = {
+          username: (user.email || "").toLowerCase(),
+          role: record?.role || "ami",
+          uid: user.uid
+        };
+      } else {
+        state.currentUser = null;
+      }
+      updateUserUI();
+    });
+
     $("loginForm").addEventListener("submit", async event => {
       event.preventDefault();
 
@@ -534,18 +555,14 @@
 
       try {
         if (!email.includes("@")) {
-          throw new Error(
-            "Cette version utilise Firebase Authentication : saisis ton adresse e-mail complète."
-          );
+          throw new Error("Saisis ton adresse e-mail complète.");
         }
 
         const credential = await signInWithEmailAndPassword(
           auth, email, password
         );
 
-        // Le rôle est déterminé après authentification.
         let record = null;
-
         try {
           record = await getUserRecord(credential.user);
         } catch (error) {
@@ -553,8 +570,8 @@
         }
 
         state.currentUser = {
-          username: credential.user.email || email,
-          role: isAdmin(record) ? "admin" : "ami",
+          username: (credential.user.email || email).toLowerCase(),
+          role: record?.role || "ami",
           uid: credential.user.uid
         };
 
@@ -572,8 +589,6 @@
       }
     });
 
-
-    // APPLICATIONS
     function startAppsListener() {
       if (unsubscribeApps) unsubscribeApps();
 
@@ -593,7 +608,7 @@
             name: safeText(app?.name, "Application sans nom"),
             category: safeText(app?.category, "Utilitaires"),
             description: safeText(app?.description),
-            author: safeText(app?.author, "Anonyme"),
+            author: safeText(app?.author, "Anonyme").toLowerCase(),
             downloadUrl: safeText(app?.downloadUrl),
             repoUrl: safeText(app?.repoUrl),
             iconUrl: safeText(app?.iconUrl)
@@ -619,10 +634,31 @@
       );
     }
 
-    function createIconButton(iconName, label, onClick) {
+    function startUsersListener() {
+      if (unsubscribeUsers) unsubscribeUsers();
+
+      unsubscribeUsers = onValue(
+        ref(db, "store_users"),
+        snapshot => {
+          const data = snapshot.val() || {};
+          state.users = Object.entries(data).map(([key, u]) => ({
+            key,
+            username: safeText(u?.username, key),
+            role: safeText(u?.role, "ami")
+          }));
+          renderUsersList();
+        },
+        error => {
+          state.usersError = error;
+          renderUsersList();
+        }
+      );
+    }
+
+    function createIconButton(iconName, label, onClick, extraClasses = "hover:bg-slate-700") {
       const button = document.createElement("button");
       button.className =
-        "p-2 rounded-lg bg-slate-800 hover:bg-slate-700";
+        `p-2 rounded-lg bg-slate-800 ${extraClasses}`;
       button.title = label;
       button.setAttribute("aria-label", label);
 
@@ -635,9 +671,13 @@
       return button;
     }
 
-    async function deleteApp(appId) {
-      if (state.currentUser?.role !== "admin") {
-        showToast("Droits administrateur requis.", "error");
+    async function deleteApp(appId, appAuthor) {
+      const currentUser = state.currentUser;
+      const isOwner = currentUser && currentUser.username === appAuthor;
+      const isAdministrator = currentUser?.role === "admin";
+
+      if (!isOwner && !isAdministrator) {
+        showToast("Seul l'auteur de l'application ou un admin peut la supprimer.", "error");
         return;
       }
 
@@ -645,7 +685,7 @@
 
       try {
         await remove(ref(db, "apps/" + appId));
-        showToast("Application supprimée.", "success");
+        showToast("Application supprimée avec succès.", "success");
       } catch (error) {
         showToast(explainFirebaseError(error), "error");
       }
@@ -704,9 +744,15 @@
         details.append(title, category);
         heading.append(img, details);
 
-        if (state.currentUser?.role === "admin") {
+        const isOwner = state.currentUser && state.currentUser.username === app.author;
+        const isAdministrator = state.currentUser?.role === "admin";
+
+        if (isOwner || isAdministrator) {
           heading.appendChild(createIconButton(
-            "trash-2", "Supprimer l'application", () => deleteApp(app.id)
+            "trash-2", 
+            "Supprimer l'application", 
+            () => deleteApp(app.id, app.author),
+            "hover:bg-rose-800 text-rose-400 hover:text-white"
           ));
         }
 
@@ -788,7 +834,6 @@
       });
     });
 
-    // AJOUT D'APPLICATION
     $("addAppForm").addEventListener("submit", async event => {
       event.preventDefault();
 
@@ -807,18 +852,6 @@
 
       if (!downloadUrl) {
         error.textContent = "Le lien de téléchargement doit être une URL HTTP ou HTTPS valide.";
-        error.hidden = false;
-        return;
-      }
-
-      if (repoValue && !safeUrl(repoValue)) {
-        error.textContent = "Le lien du code source est invalide.";
-        error.hidden = false;
-        return;
-      }
-
-      if (iconValue && !safeUrl(iconValue)) {
-        error.textContent = "Le lien de l'icône est invalide.";
         error.hidden = false;
         return;
       }
@@ -852,6 +885,53 @@
       }
     });
 
+    // CRÉATION D'UTILISATEUR PAR L'ADMIN
+    $("createUserForm").addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const error = $("createUserError");
+      error.hidden = true;
+
+      if (state.currentUser?.role !== "admin") {
+        error.textContent = "Seul un administrateur peut ajouter des rôles.";
+        error.hidden = false;
+        return;
+      }
+
+      const newEmail = $("newUsername").value.trim().toLowerCase();
+      const newRole = $("newUserRole").value;
+
+      if (!newEmail || !newEmail.includes("@")) {
+        error.textContent = "Saisis un e-mail valide.";
+        error.hidden = false;
+        return;
+      }
+
+      const btn = $("createUserSubmitBtn");
+      btn.disabled = true;
+      btn.textContent = "Ajout en cours...";
+
+      try {
+        const targetKey = emailKey(newEmail);
+        await set(ref(db, "store_users/" + targetKey), {
+          username: newEmail,
+          role: newRole,
+          createdBy: state.currentUser.username,
+          createdAt: Date.now()
+        });
+
+        $("createUserForm").reset();
+        showToast(`Utilisateur ${newEmail} enregistré sous le rôle ${newRole} !`, "success");
+      } catch (err) {
+        console.error(err);
+        error.textContent = explainFirebaseError(err);
+        error.hidden = false;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Ajouter au répertoire";
+      }
+    });
+
     // COMPTES CONTRIBUTEURS
     function renderUsersList() {
       const container = $("usersListContainer");
@@ -868,7 +948,7 @@
       if (!state.users.length) {
         const empty = document.createElement("p");
         empty.className = "text-sm text-slate-500";
-        empty.textContent = "Aucun compte contributeur enregistré.";
+        empty.textContent = "Aucun utilisateur enregistré.";
         container.appendChild(empty);
         return;
       }
@@ -884,126 +964,26 @@
           safeText(user.username, user.key) + " (" +
           safeText(user.role, "ami") + ")";
 
-        row.appendChild(label);
-
-        if (user.role !== "admin") {
-          row.appendChild(createIconButton(
-            "trash-2", "Supprimer ce profil", async () => {
-              if (state.currentUser?.role !== "admin") return;
-              if (!confirm("Supprimer ce profil de la base de données ?")) return;
-
-              try {
-                await remove(ref(db, "store_users/" + user.key));
-                showToast("Profil supprimé.", "success");
-              } catch (err) {
-                showToast(explainFirebaseError(err), "error");
-              }
+        const delBtn = document.createElement("button");
+        delBtn.className = "text-xs text-rose-400 hover:text-rose-300 p-1";
+        delBtn.textContent = "Supprimer";
+        delBtn.addEventListener("click", async () => {
+          if (confirm(`Supprimer le profil de ${user.username} ?`)) {
+            try {
+              await remove(ref(db, "store_users/" + user.key));
+              showToast("Rôle supprimé.", "success");
+            } catch (err) {
+              showToast(explainFirebaseError(err), "error");
             }
-          ));
-        }
+          }
+        });
 
+        row.append(label, delBtn);
         container.appendChild(row);
       }
-
-      if (window.lucide) lucide.createIcons();
     }
 
-    $("createUserForm").addEventListener("submit", async event => {
-      event.preventDefault();
-
-      const error = $("createUserError");
-      error.hidden = true;
-
-      if (state.currentUser?.role !== "admin") {
-        error.textContent = "Droits administrateur requis.";
-        error.hidden = false;
-        return;
-      }
-
-      error.textContent =
-        "La création de comptes doit passer par Firebase Authentication ou un serveur de confiance. Elle n'est pas activée dans cette version.";
-      error.hidden = false;
-    });
-
-    // INITIALISATION
-    try {
-      const firebaseApp = initializeApp(firebaseConfig);
-      db = getDatabase(firebaseApp);
-      auth = getAuth(firebaseApp);
-      
-      // L'état de connexion est traité dans les DEUX cas.
-    onAuthStateChanged(auth, async user => {
-      if (!user) {
-        state.currentUser = null;
-        updateUserUI();
-        return;
-      }
-
-      try {
-        const record = await getUserRecord(user);
-        state.currentUser = {
-          username: user.email || user.uid,
-          role: isAdmin(record) ? "admin" : "ami",
-          uid: user.uid
-        };
-      } catch (error) {
-        console.error("Impossible de vérifier le rôle :", error);
-        state.currentUser = {
-          username: user.email || user.uid,
-          role: "ami",
-          uid: user.uid
-        };
-        showToast("Profil non vérifié : droits limités.", "error");
-      }
-
-      updateUserUI();
-    });
-
-      startAppsListener();
-
-      unsubscribeUsers = onValue(
-        ref(db, "store_users"),
-        snapshot => {
-          const data = snapshot.val() || {};
-          state.users = Object.entries(data).map(([key, value]) => ({
-            key,
-            ...(value || {})
-          }));
-          state.usersError = null;
-          renderUsersList();
-        },
-        error => {
-          console.error("Erreur de lecture des comptes :", error);
-          state.usersError = error;
-          renderUsersList();
-        }
-      );
-
-      setStatus("Firebase initialisé");
-    } catch (error) {
-      console.error("Initialisation Firebase impossible :", error);
-      setStatus("Erreur d'initialisation");
-      $("loadingMessage").hidden = true;
-      $("loadError").hidden = false;
-      $("loadErrorText").textContent =
-        "Impossible d'initialiser Firebase : " + explainFirebaseError(error);
-    }
-
-    document.querySelectorAll("[id$='Modal']").forEach(modal => {
-      modal.addEventListener("click", event => {
-        if (event.target === modal) closeModal(modal.id);
-      });
-    });
-
-    document.addEventListener("keydown", event => {
-      if (event.key === "Escape") {
-        ["loginModal", "submitModal", "adminPanelModal"].forEach(id => {
-          if (!$(id).hidden) closeModal(id);
-        });
-      }
-    });
-
-    if (window.lucide) lucide.createIcons();
+    startAppsListener();
   </script>
 </body>
 </html>
