@@ -1,0 +1,432 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APK Finder</title>
+
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0b1020;
+  --panel: #151e33;
+  --accent: #7c9cff;
+  --text: #f4f6ff;
+  --muted: #aab5cf;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px 14px;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px Arial, sans-serif;
+}
+
+main {
+  max-width: 850px;
+  margin: auto;
+}
+
+header {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.logo {
+  font-size: 48px;
+}
+
+h1 {
+  margin: 10px 0;
+}
+
+p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid #2b3855;
+  border-radius: 16px;
+  padding: 20px;
+  margin: 18px 0;
+}
+
+label {
+  display: block;
+  margin: 14px 0 8px;
+  font-weight: bold;
+}
+
+input {
+  width: 100%;
+  padding: 13px;
+  border-radius: 9px;
+  border: 1px solid #405071;
+  background: var(--bg);
+  color: white;
+  font-size: 15px;
+}
+
+button {
+  border: 0;
+  border-radius: 9px;
+  padding: 12px 16px;
+  margin: 10px 6px 0 0;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--accent);
+  color: #081126;
+}
+
+.secondary {
+  background: #2b3855;
+  color: white;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.result {
+  border: 1px solid #344260;
+  padding: 15px;
+  border-radius: 12px;
+  margin-top: 12px;
+  overflow-wrap: anywhere;
+}
+
+.result h3 {
+  margin-top: 0;
+}
+
+.copy-button {
+  background: var(--accent);
+  color: #081126;
+}
+
+.status {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 13px;
+}
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  padding: 20px;
+  font-size: 13px;
+}
+</style>
+</head>
+
+<body>
+<main>
+
+<header>
+  <div class="logo">📦</div>
+  <h1>APK Finder</h1>
+  <p>Recherche des APK sur GitHub et copie leurs liens facilement.</p>
+</header>
+
+  <p id="directStatus" class="small"></p>
+</section>
+
+<section class="panel">
+  <h2>🔎 Rechercher des APK sur GitHub</h2>
+
+  <label for="repoUrl">Adresse du dépôt GitHub</label>
+
+  <input
+    id="repoUrl"
+    type="url"
+    value="https://github.com/cgeo/cgeo"
+    placeholder="https://github.com/proprietaire/depot"
+  >
+
+  <button class="primary" id="searchButton">
+    🔍 Rechercher
+  </button>
+
+  <p class="small">
+    Entre l'adresse d'un dépôt GitHub public pour rechercher
+    les fichiers APK présents dans ses releases.
+  </p>
+</section>
+
+<section class="panel">
+  <h2>📱 APK trouvés</h2>
+
+  <div id="status" class="status">
+    Entre un dépôt GitHub et clique sur Rechercher.
+  </div>
+
+  <div id="results"></div>
+</section>
+
+<footer>
+  APK Finder · HTML autonome · Compatible GitHub Pages
+</footer>
+
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const repoUrl = $("repoUrl");
+const results = $("results");
+const status = $("status");
+const searchButton = $("searchButton");
+
+// Vérifie une adresse HTTP ou HTTPS
+function validHttpUrl(value) {
+  try {
+    const url = new URL(value.trim());
+
+    if (url.protocol === "https:" || url.protocol === "http:") {
+      return url.href;
+    }
+  } catch {}
+
+  return null;
+}
+
+// Copie un lien
+async function copyLink(url, button) {
+  try {
+    await navigator.clipboard.writeText(url);
+    button.textContent = "✅ Lien copié !";
+  } catch {
+    const area = document.createElement("textarea");
+
+    area.value = url;
+    area.style.position = "fixed";
+    area.style.left = "-9999px";
+
+    document.body.appendChild(area);
+    area.select();
+
+    let copied = false;
+
+    try {
+      copied = document.execCommand("copy");
+    } catch {}
+
+    area.remove();
+
+    button.textContent = copied
+      ? "✅ Lien copié !"
+      : "❌ Copie impossible";
+  }
+
+  setTimeout(() => {
+    button.textContent = "📋 Copier le lien";
+  }, 2500);
+}
+
+// Téléchargement direct
+$("directDownload").addEventListener("click", () => {
+  const url = validHttpUrl($("directUrl").value);
+
+  if (!url) {
+    $("directStatus").textContent = "❌ Adresse invalide.";
+    return;
+  }
+
+  window.open(url, "_blank", "noopener,noreferrer");
+
+  $("directStatus").textContent =
+    "Lien ouvert. Le serveur décide si le fichier est téléchargé directement.";
+});
+
+// Copie du lien direct
+$("directCopy").addEventListener("click", async () => {
+  const url = validHttpUrl($("directUrl").value);
+
+  if (!url) {
+    $("directStatus").textContent = "❌ Adresse invalide.";
+    return;
+  }
+
+  await copyLink(url, $("directCopy"));
+  $("directStatus").textContent = "Tu peux coller le lien où tu veux.";
+});
+
+// Récupère le propriétaire et le dépôt GitHub
+function parseRepository(value) {
+  const url = validHttpUrl(value);
+
+  if (!url) return null;
+
+  let parsed;
+
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+
+  if (parsed.hostname.toLowerCase() !== "github.com") {
+    return null;
+  }
+
+  const parts = parsed.pathname.split("/").filter(Boolean);
+
+  if (parts.length < 2) return null;
+
+  const owner = parts[0];
+  const repo = parts[1].replace(/\.git$/i, "");
+
+  if (!owner || !repo) return null;
+
+  return { owner, repo };
+}
+
+// Recherche les APK dans les releases GitHub
+async function searchApks() {
+  results.replaceChildren();
+
+  const repository = parseRepository(repoUrl.value);
+
+  if (!repository) {
+    status.textContent =
+      "❌ Entre une adresse de dépôt GitHub valide.";
+    return;
+  }
+
+  searchButton.disabled = true;
+  searchButton.textContent = "Recherche…";
+
+  let count = 0;
+  let pagesRead = 0;
+
+  try {
+    for (let page = 1; page <= 10; page++) {
+      status.textContent =
+        `Recherche en cours… page ${page} · ${count} APK trouvé(s)`;
+
+      const apiUrl =
+        "https://api.github.com/repos/" +
+        encodeURIComponent(repository.owner) + "/" +
+        encodeURIComponent(repository.repo) +
+        "/releases?per_page=100&page=" + page;
+
+      const response = await fetch(apiUrl, {
+        headers: {
+          Accept: "application/vnd.github+json"
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error(
+            "Dépôt introuvable, privé ou inaccessible."
+          );
+        }
+
+        if (response.status === 403 || response.status === 429) {
+          throw new Error(
+            "Limite de requêtes GitHub atteinte. Réessaie plus tard."
+          );
+        }
+
+        throw new Error("Erreur GitHub : HTTP " + response.status);
+      }
+
+      const releases = await response.json();
+      pagesRead++;
+
+      if (releases.length === 0) break;
+
+      for (const release of releases) {
+        for (const asset of release.assets || []) {
+          if (!asset.name.toLowerCase().endsWith(".apk")) {
+            continue;
+          }
+
+          count++;
+
+          const card = document.createElement("article");
+          card.className = "result";
+
+          const title = document.createElement("h3");
+          title.textContent = "📱 " + asset.name;
+
+          const version = document.createElement("p");
+          version.textContent =
+            "Version : " +
+            (release.name || release.tag_name || "Inconnue");
+
+          const size = document.createElement("p");
+          size.textContent =
+            "Taille : " +
+            (asset.size / 1048576).toFixed(2) + " Mo";
+
+          const linkText = document.createElement("p");
+          linkText.className = "small";
+          linkText.textContent = asset.browser_download_url;
+
+          const copyButton = document.createElement("button");
+          copyButton.className = "copy-button";
+          copyButton.textContent = "📋 Copier le lien";
+
+          copyButton.addEventListener("click", () => {
+            copyLink(asset.browser_download_url, copyButton);
+          });
+
+          card.append(
+            title,
+            version,
+            size,
+            linkText,
+            copyButton
+          );
+
+          results.appendChild(card);
+        }
+      }
+
+      if (releases.length < 100) break;
+    }
+
+    status.textContent = count
+      ? `✅ ${count} APK trouvé(s) dans ${pagesRead} page(s) de releases.`
+      : "Aucun APK trouvé dans les releases consultées.";
+
+  } catch (error) {
+    status.textContent = "❌ " + error.message;
+  } finally {
+    searchButton.disabled = false;
+    searchButton.textContent = "🔍 Rechercher";
+  }
+}
+
+searchButton.addEventListener("click", searchApks);
+
+repoUrl.addEventListener("keydown", event => {
+  if (event.key === "Enter") searchApks();
+});
+
+$("directUrl").addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    $("directDownload").click();
+  }
+});
+</script>
+
+</body>
+</html>
